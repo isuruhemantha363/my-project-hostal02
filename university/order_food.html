@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Food Ordering System with Deadlines</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .order-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* Progress Indicator */
+        .steps-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .step-dot {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ccc;
+            flex: 1;
+            text-align: center;
+        }
+
+        .step-dot.active {
+            color: #e67e22;
+        }
+
+        .step-panel {
+            display: none;
+        }
+
+        .step-panel.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 15px;
+            background: #e67e22;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label.main-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #e67e22;
+        }
+
+        /* Skip & Timeout Containers */
+        .skip-container {
+            background: #fff3cd;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #856404;
+        }
+
+        .timeout-container {
+            background: #f8d7da;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #721c24;
+            display: none;
+        }
+
+        .food-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .food-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fdfdfd;
+            padding: 10px 15px;
+            border: 1px solid #eaeaea;
+            border-radius: 6px;
+        }
+
+        .food-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .count-input {
+            width: 80px !important;
+            padding: 6px 10px !important;
+            text-align: center;
+        }
+
+        /* Summary Styles */
+        .summary-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        .summary-meal-title {
+            font-weight: bold;
+            color: #d35400;
+            margin-top: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 5px 10px 0 10px;
+        }
+
+        /* Navigation Buttons */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            transition: 0.3s;
+        }
+
+        .btn-next { background-color: #e67e22; color: white; }
+        .btn-next:hover { background-color: #d35400; }
+        .btn-back { background-color: #ccc; color: #333; }
+        .btn-back:hover { background-color: #bbb; }
+        .btn-confirm { background-color: #28a745; color: white; }
+        .btn-confirm:hover { background-color: #218838; }
+
+        /* Loading Overlay Overlay CSS */
+        .overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            border-radius: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #e67e22;
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="order-container">
+    <!-- Loading Screen -->
+    <div class="overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="font-weight: bold; color: #555;">Processing Your Order... Please Wait!</p>
+    </div>
+
+    <h2>Place Your Food Order</h2>
+    <p class="subtitle">කරුණාකර ඇණවුම් කිරීමට බලාපොරොත්තු වන දිනය සහ තොරතුරු ඇතුළත් කරන්න.</p>
+    
+    <!-- පියවර දර්ශකය -->
+    <div class="steps-indicator">
+        <span class="step-dot active" id="dot1">1. උදේ</span>
+        <span class="step-dot" id="dot2">2. දවල්</span>
+        <span class="step-dot" id="dot3">3. රාත්‍රී</span>
+        <span class="step-dot" id="dot4">4. තහවුරු කිරීම</span>
+    </div>
+
+    <!-- action එකට ඔයාගේ අලුත් Google Web App Url එක ඇතුලත් කරන්න -->
+    <form action="https://script.google.com/macros/s/AKfycbwcBH5hfa9fUyznVzBxFhMdBdmSiJfHvfy1NCWAqD9a4G-Wy6avBKAqReO_nPDQwxK7gQ/exec" method="POST" id="mainOrderForm">
+        
+        <!-- STEP 1: DATE, ROOM & BREAKFAST -->
+        <div class="step-panel active" id="step1">
+            <div class="input-group">
+                <label class="main-label" for="orderDate">Ordering Date (ආහාර අවශ්‍ය දිනය)</label>
+                <input type="date" id="orderDate" name="orderDate" onchange="checkDeadlines()" required>
+            </div>
+
+            <div class="input-group">
+                <label class="main-label" for="roomNumber">Room Number (කාමර අංකය)</label>
+                <input type="text" id="roomNumber" name="roomNumber" placeholder="000" required>
+            </div>
+
+            <div class="section-title">Step 1: Breakfast (උදේ ආහාරය)</div>
+            
+            <div class="timeout-container" id="timeout_bf">
+                ⚠️ මෙම දිනය සඳහා උදේ ආහාර ඇණවුම් භාරගන්නා කාලය (එදිනම 1:00 AM) අවසන් වී ඇත!
+            </div>
+
+            <label class="skip-container" id="skip_box_bf">
+                <input type="checkbox" id="skip_bf" name="skip_bf" onchange="toggleMealSkip('bf', this)"> උදේ ආහාරය අවශ්‍ය නැත (Skip Breakfast)
+            </label>
+
+            <div class="food-grid" id="grid_bf">
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="bf_items[]" value="Fish" onchange="toggleCount(this, 'bf_fish')"> මාළු (Fish)</label>
+                    <input type="number" id="bf_fish" name="bf_count_fish" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="bf_items[]" value="Chicken" onchange="toggleCount(this, 'bf_chicken')"> චිකන් (Chicken)</label>
+                    <input type="number" id="bf_chicken" name="bf_count_chicken" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="bf_items[]" value="Sausage" onchange="toggleCount(this, 'bf_sausage')"> සොසේජස් (Sausage)</label>
+                    <input type="number" id="bf_sausage" name="bf_count_sausage" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="bf_items[]" value="Egg" onchange="toggleCount(this, 'bf_egg')"> බิත්තර (Egg)</label>
+                    <input type="number" id="bf_egg" name="bf_count_egg" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="bf_items[]" value="Vegetable" onchange="toggleCount(this, 'bf_veg')"> එළවළු (Vegetable)</label>
+                    <input type="number" id="bf_veg" name="bf_count_veg" class="count-input" min="1" value="1" disabled>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-next" onclick="nextStep(2)">Next (දවල් කෑම වෙත) &raquo;</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: LUNCH -->
+        <div class="step-panel" id="step2">
+            <div class="section-title">Step 2: Lunch (දවල් ආහාරය)</div>
+            
+            <div class="timeout-container" id="timeout_lh">
+                ⚠️ මෙම දිනය සඳහා දවල් ආහාර ඇණවුම් භාරගන්නා කාලය (එදිනම 9:00 AM) අවසන් වී ඇත!
+            </div>
+
+            <label class="skip-container" id="skip_box_lh">
+                <input type="checkbox" id="skip_lh" name="skip_lh" onchange="toggleMealSkip('lh', this)"> දවල් ආහාරය අවශ්‍ය නැත (Skip Lunch)
+            </label>
+
+            <div class="food-grid" id="grid_lh">
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="lh_items[]" value="Fish" onchange="toggleCount(this, 'lh_fish')"> මාළු (Fish)</label>
+                    <input type="number" id="lh_fish" name="lh_count_fish" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="lh_items[]" value="Chicken" onchange="toggleCount(this, 'lh_chicken')"> චිකන් (Chicken)</label>
+                    <input type="number" id="lh_chicken" name="lh_count_chicken" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="lh_items[]" value="Sausage" onchange="toggleCount(this, 'lh_sausage')"> සොසේජස් (Sausage)</label>
+                    <input type="number" id="lh_sausage" name="lh_count_sausage" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="lh_items[]" value="Egg" onchange="toggleCount(this, 'lh_egg')"> බිත්තර (Egg)</label>
+                    <input type="number" id="lh_egg" name="lh_count_egg" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="lh_items[]" value="Vegetable" onchange="toggleCount(this, 'lh_veg')"> එළවළු (Vegetable)</label>
+                    <input type="number" id="lh_veg" name="lh_count_veg" class="count-input" min="1" value="1" disabled>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-back" onclick="prevStep(1)">&laquo; Back</button>
+                <button type="button" class="btn btn-next" onclick="nextStep(3)">Next (රාත්‍රී කෑම වෙත) &raquo;</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: DINNER -->
+        <div class="step-panel" id="step3">
+            <div class="section-title">Step 3: Dinner (රාත්‍රී ආහාරය)</div>
+            
+            <div class="timeout-container" id="timeout_dn">
+                ⚠️ මෙම දිනය සඳහා රාත්‍රී ආහාර ඇණවුම් භාරගන්නා කාලය (එදිනම 4:00 PM) අවසන් වී ඇත!
+            </div>
+
+            <label class="skip-container" id="skip_box_dn">
+                <input type="checkbox" id="skip_dn" name="skip_dn" onchange="toggleMealSkip('dn', this)"> රාත්‍රී ආහාරය අවශ්‍ය නැත (Skip Dinner)
+            </label>
+
+            <div class="food-grid" id="grid_dn">
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="dn_items[]" value="Fish" onchange="toggleCount(this, 'dn_fish')"> මාළු (Fish)</label>
+                    <input type="number" id="dn_fish" name="dn_count_fish" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="dn_items[]" value="Chicken" onchange="toggleCount(this, 'dn_chicken')"> චිකන් (Chicken)</label>
+                    <input type="number" id="dn_chicken" name="dn_count_chicken" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="dn_items[]" value="Sausage" onchange="toggleCount(this, 'dn_sausage')"> සොසේජස් (Sausage)</label>
+                    <input type="number" id="dn_sausage" name="dn_count_sausage" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="dn_items[]" value="Egg" onchange="toggleCount(this, 'dn_egg')"> බිත්තර (Egg)</label>
+                    <input type="number" id="dn_egg" name="dn_count_egg" class="count-input" min="1" value="1" disabled>
+                </div>
+                <div class="food-item-row">
+                    <label class="food-label"><input type="checkbox" name="dn_items[]" value="Vegetable" onchange="toggleCount(this, 'dn_veg')"> එළවළු (Vegetable)</label>
+                    <input type="number" id="dn_veg" name="dn_count_veg" class="count-input" min="1" value="1" disabled>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-back" onclick="prevStep(2)">&laquo; Back</button>
+                <button type="button" class="btn btn-next" onclick="generateSummary()">Review Order &raquo;</button>
+            </div>
+        </div>
+
+        <!-- STEP 4: SUMMARY & CONFIRM -->
+        <div class="step-panel" id="step4">
+            <div class="section-title">Step 4: Final Summary (අවසාන එකතුව)</div>
+            
+            <div class="summary-card" id="summaryContent">
+                <!-- JavaScript Summary -->
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-back" onclick="prevStep(3)">&laquo; Back</button>
+                <button type="submit" class="btn btn-confirm" id="btn_submit_main">Confirm & Submit Order</button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<script>
+window.onload = function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('orderDate');
+    dateInput.min = today;
+    dateInput.value = today;
+    checkDeadlines();
+};
+
+function checkDeadlines() {
+    const selectedDateVal = document.getElementById('orderDate').value;
+    if (!selectedDateVal) return;
+
+    const now = new Date(); 
+    const targetDate = new Date(selectedDateVal);
+    targetDate.setHours(0,0,0,0);
+
+    const bfDeadline = new Date(targetDate.getTime());
+    bfDeadline.setHours(1, 0, 0, 0); 
+    const bf_expired = (now >= bfDeadline);
+
+    const lhDeadline = new Date(targetDate.getTime());
+    lhDeadline.setHours(9, 0, 0, 0);
+    const lh_expired = (now >= lhDeadline);
+
+    const dnDeadline = new Date(targetDate.getTime());
+    dnDeadline.setHours(16, 0, 0, 0);
+    const dn_expired = (now >= dnDeadline);
+
+    handleMealStatus('bf', bf_expired);
+    handleMealStatus('lh', lh_expired);
+    handleMealStatus('dn', dn_expired);
+
+    const btnSubmit = document.getElementById('btn_submit_main');
+    if (bf_expired && lh_expired && dn_expired) {
+        btnSubmit.disabled = true;
+        btnSubmit.style.background = "#ccc";
+        btnSubmit.innerText = "All Deadlines Passed";
+    } else {
+        btnSubmit.disabled = false;
+        btnSubmit.style.background = "#28a745";
+        btnSubmit.innerText = "Confirm & Submit Order";
+    }
+}
+
+function handleMealStatus(prefix, isExpired) {
+    const gridDiv = document.getElementById('grid_' + prefix);
+    const timeoutBox = document.getElementById('timeout_' + prefix);
+    const skipBox = document.getElementById('skip_box_' + prefix);
+    const skipCheckbox = document.getElementById('skip_' + prefix);
+    
+    const checkboxes = gridDiv.querySelectorAll('input[type="checkbox"]');
+    const numbers = gridDiv.querySelectorAll('input[type="number"]');
+
+    if (isExpired) {
+        timeoutBox.style.display = "block";
+        skipBox.style.display = "none";
+        gridDiv.style.opacity = "0.3";
+        checkboxes.forEach(cb => { cb.checked = false; cb.disabled = true; });
+        numbers.forEach(num => { num.value = 1; num.disabled = true; });
+        if(skipCheckbox) skipCheckbox.checked = true; 
+    } else {
+        timeoutBox.style.display = "none";
+        skipBox.style.display = "flex";
+        gridDiv.style.opacity = "1";
+        checkboxes.forEach(cb => { cb.disabled = false; });
+        if(skipCheckbox) skipCheckbox.checked = false;
+    }
+}
+
+function toggleCount(checkbox, id) {
+    const countInput = document.getElementById(id);
+    if(checkbox.checked) {
+        countInput.disabled = false;
+        countInput.focus();
+    } else {
+        countInput.disabled = true;
+        countInput.value = 1;
+    }
+}
+
+function toggleMealSkip(prefix, skipCheckbox) {
+    const gridDiv = document.getElementById('grid_' + prefix);
+    const checkboxes = gridDiv.querySelectorAll('input[type="checkbox"]');
+    const numbers = gridDiv.querySelectorAll('input[type="number"]');
+    
+    if(skipCheckbox.checked) {
+        gridDiv.style.opacity = "0.4";
+        checkboxes.forEach(cb => { cb.checked = false; cb.disabled = true; });
+        numbers.forEach(num => { num.value = 1; num.disabled = true; });
+    } else {
+        gridDiv.style.opacity = "1";
+        checkboxes.forEach(cb => { cb.disabled = false; });
+    }
+}
+
+function nextStep(stepNum) {
+    if(stepNum === 2 && (!document.getElementById('orderDate').reportValidity() || !document.getElementById('roomNumber').reportValidity())) {
+        return;
+    }
+    document.querySelectorAll('.step-panel').forEach(panel => panel.classList.remove('active'));
+    document.querySelectorAll('.step-dot').forEach(dot => dot.classList.remove('active'));
+    
+    document.getElementById('step' + stepNum).classList.add('active');
+    for(let i=1; i<=stepNum; i++) {
+        document.getElementById('dot' + i).classList.add('active');
+    }
+}
+
+function prevStep(stepNum) {
+    nextStep(stepNum);
+}
+
+function generateSummary() {
+    const room = document.getElementById('roomNumber').value;
+    const date = document.getElementById('orderDate').value;
+    let html = `<p><strong>Order Date:</strong> ${date}</p>`;
+    html += `<p><strong>Room Number:</strong> ${room}</p>`;
+    
+    // Breakfast
+    html += `<div class="summary-meal-title">Breakfast (උදේ)</div>`;
+    if(document.getElementById('skip_bf').checked) {
+        html += `<p style='color:gray; font-size:13px; padding-left:10px;'>Skipped / Time Out</p>`;
+    } else {
+        let items = document.querySelectorAll('input[name="bf_items[]"]:checked');
+        if(items.length === 0) html += `<p style='color:red; font-size:13px; padding-left:10px;'>කිසිවක් තෝරා නැත</p>`;
+        items.forEach(item => {
+            let countId = 'bf_' + item.value.toLowerCase().replace('vegetable', 'veg');
+            let count = document.getElementById(countId).value;
+            html += `<div class="summary-item"><span>${item.value}</span> <span>x ${count}</span></div>`;
+        });
+    }
+
+    // Lunch
+    html += `<div class="summary-meal-title">Lunch (දවල්)</div>`;
+    if(document.getElementById('skip_lh').checked) {
+        html += `<p style='color:gray; font-size:13px; padding-left:10px;'>Skipped / Time Out</p>`;
+    } else {
+        let items = document.querySelectorAll('input[name="lh_items[]"]:checked');
+        if(items.length === 0) html += `<p style='color:red; font-size:13px; padding-left:10px;'>කිසිවක් තෝරා නැත</p>`;
+        items.forEach(item => {
+            let countId = 'lh_' + item.value.toLowerCase().replace('vegetable', 'veg');
+            let count = document.getElementById(countId).value;
+            html += `<div class="summary-item"><span>${item.value}</span> <span>x ${count}</span></div>`;
+        });
+    }
+
+    // Dinner
+    html += `<div class="summary-meal-title">Dinner (රාත්‍රී)</div>`;
+    if(document.getElementById('skip_dn').checked) {
+        html += `<p style='color:gray; font-size:13px; padding-left:10px;'>Skipped / Time Out</p>`;
+    } else {
+        let items = document.querySelectorAll('input[name="dn_items[]"]:checked');
+        if(items.length === 0) html += `<p style='color:red; font-size:13px; padding-left:10px;'>කිසිවක් තෝරා නැත</p>`;
+        items.forEach(item => {
+            let countId = 'dn_' + item.value.toLowerCase().replace('vegetable', 'veg');
+            let count = document.getElementById(countId).value;
+            html += `<div class="summary-item"><span>${item.value}</span> <span>x ${count}</span></div>`;
+        });
+    }
+
+    document.getElementById('summaryContent').innerHTML = html;
+    nextStep(4);
+}
+
+// --- මෙන්න ඔයා ඉල්ලපු නව AJAX Submission ලොජික් එක ---
+document.getElementById('mainOrderForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // සාමාන්‍ය විදිහට වෙනත් පිටුවකට යන එක නවත්වනවා
+    
+    const form = e.target;
+    const overlay = document.getElementById('loadingOverlay');
+    
+    // Loading Screen එක පෙන්වීම
+    overlay.style.display = 'flex';
+    
+    // Form එකේ දත්ත එකතු කරගැනීම
+    const formData = new FormData(form);
+    
+    // URL-encoded string එකක් බවට පත් කිරීම
+    const searchParams = new URLSearchParams();
+    for (const pair of formData) {
+        searchParams.append(pair[0], pair[1]);
+    }
+    
+    // Google Apps Script එකට රහසේම දත්ත යැවීම (Fetch API)
+    fetch(form.action, {
+        method: 'POST',
+        body: searchParams,
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.style.display = 'none'; // Loading අයින් කරනවා
+        
+        if(data.result === 'success') {
+            // සාර්ථක මැසේජ් එකක් දීම
+            alert('🎉 Your order has been successfully placed and saved to Google Sheets!');
+            
+            // Form එක සම්පූර්ණයෙන්ම හිස් කර මුල් තත්ත්වයට පත් කිරීම (Auto-Logout/Reset)
+            form.reset();
+            window.location.reload(); // පිටුව මුල ඉඳන් Refresh කරනවා
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        overlay.style.display = 'none';
+        alert('❌ Connection error. Please check your internet and try again.');
+        console.error('Error!', error.message);
+    });
+});
+</script>
+
+</body>
+</html>
